@@ -4,17 +4,6 @@ const int pwPin1 = 3;
 const int pwPin2 = 5;
 int triggerPin1 = 13;
 long sensor1, sensor2, distance1, distance2;
-
-
-// include the SoftwareSerial library so we can use it to talk to the Emic 2 module
-#include <SoftwareSerial.h>
-
-#define rxPin   10  // Serial input (connects to Emic 2's SOUT pin)
-#define txPin   11  // Serial output (connects to Emic 2's SIN pin)
-#define ledPin  13  // Most Arduino boards have an on-board LED on this pin
-
-// set up a new serial port
-SoftwareSerial emicSerial =  SoftwareSerial(rxPin, txPin);
 void start_sensor(){
   digitalWrite(triggerPin1,HIGH);
   delay(1);
@@ -29,27 +18,6 @@ void setup() {
   pinMode(pwPin1, INPUT); 
   pinMode(pwPin2, INPUT);
   pinMode(triggerPin1, OUTPUT);
-
-  // define pin modes
-  pinMode(ledPin, OUTPUT);
-  pinMode(rxPin, INPUT);
-  pinMode(txPin, OUTPUT);
-  
-  // set the data rate for the SoftwareSerial port
-  emicSerial.begin(9600);
-
-  digitalWrite(ledPin, LOW);  // turn LED off, LED turns on when speaking
-  
-  /*
-    When the Emic 2 powers on, it takes about 3 seconds for it to successfully
-    initialize. It then sends a ":" character to indicate it's ready to accept
-    commands. If the Emic 2 is already initialized, a CR will also cause it
-    to send a ":"
-  */
-  emicSerial.print('\n');             // Send a CR in case the system is already up
-  while (emicSerial.read() != ':');   // When the Emic 2 has initialized and is ready, it will send a single ':' character, so wait here until we receive it
-  delay(10);                          // Short delay
-  emicSerial.flush();                 // Flush the receive buffer
 }
 void printall(){         
   if (distance1 >100 ){
@@ -65,6 +33,7 @@ void loop () {
   start_sensor();
   read_sensor();
   printall();
+  delay(2);  //delay before the void loop starts the section again
   delay(5);
 
   date();
