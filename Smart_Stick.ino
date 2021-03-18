@@ -149,6 +149,7 @@ void rightOfCane(){
   digitalWrite(ledPin, HIGH);         // Turn on LED while Emic is outputting audio
   while (emicSerial.read() != ':');   // Wait here until the Emic 2 responds with a ":" indicating it's ready to accept the next command
   digitalWrite(ledPin, LOW);
+  
 }
 
 void distanceOfObj(){
