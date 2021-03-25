@@ -1,7 +1,3 @@
-//SDP2021 Team 32
-
-
-////Imports/////
 #include <FatReader.h>
 #include <SdReader.h>
 #include <avr/pgmspace.h>
@@ -9,103 +5,20 @@
 #include "WaveHC.h"
 
 
-//Sensors
-const int pwPin1 = 9;
-const int pwPin2 = 11;
-//int triggerPin1 = 13;
-long sensor1, sensor2, distance1, distance2;
-
-//Wave Shield
 SdReader card;    // This object holds the information for the card
 FatVolume vol;    // This holds the information for the partition on the card
 FatReader root;   // This holds the information for the filesystem on the card
 FatReader f;      // This holds the information for the file we're play
+
 WaveHC wave;      // This is the only wave (audio) object, since we will only play one at a time
+
 #define DEBOUNCE 5  // button debouncer
 // Global variables
 int num=0;
 char toPlay[8]; // file to play 00.WAV to 99.WAV
 
+// This handy macro lets us determine how big the array up above is, by checking the size
 
-////////////Universal SetUp/////////////
-void setup() 
-{
-  Serial.begin(9600);
-  sensor_setup();   // (1.)
-  waveShield_SetUp(); // (2.)
-}
-////////////Universal Loop/////////////
-void loop () {
-  start_sensor();
-  read_sensor();
-  waveShield_Loop();
-  printall();
-}
-//////////////////////////////////////////
-
-
-////////////  (1.) Sensor code/////////////
-
-//-------Sensor set up--------//
-void sensor_setup()  //---> (1.)
-{
-  pinMode(pwPin1, INPUT); 
-  pinMode(pwPin2, INPUT);
-  //pinMode(triggerPin1, OUTPUT);
-}
-//----------------------------//
-void start_sensor()
-{
-  //digitalWrite(triggerPin1,HIGH);
-  delay(1);
-  //digitalWrite(triggerPin1,LOW);
-}
-
-void read_sensor()
-{
-  sensor1 = pulseIn(pwPin1, HIGH);
-  distance1 = sensor1/10; //makes the reported range the distance in centimeters
-  delay(1); //helped make the range readings more stable
-  sensor2 = pulseIn(pwPin2, HIGH);
-  distance2 = sensor2/10; 
-}
-
-void printall()
-{         
-  if (distance1<50 && distance2<50){
-    Serial.println("\n Obstacle in Front: ");
-    Serial.print(" L = ");
-    Serial.print(distance1);
-    Serial.print(" R = ");
-    Serial.print(distance2);
-  } 
-  else if (distance1<50 && !distance2<50){
-    Serial.println("\n Obstacle to left: ");
-    Serial.print(" L = ");
-    Serial.print(distance1);
-    Serial.print(" R = ");
-    Serial.print(distance2);
-  } 
-  else if (!distance1<50 && distance2<50){
-    Serial.println("\n Obstacle to right: ");
-    Serial.print(" L = ");
-    Serial.print(distance1);
-    Serial.print(" R = ");
-    Serial.print(distance2);
-  }
-  else
-  {
-    Serial.print("\n Clear ");
-    Serial.print(" L = ");
-    Serial.print(distance1);
-    Serial.print(" R = ");
-    Serial.print(distance2);
-  }
-}
-////////////////////////////////////////
-
-////////////////////////////////////////
-/// --- Wave Shield --- ///
 // this handy function will return the number of bytes currently free in RAM, great for debugging!   
 int freeRam(void)
 {
@@ -121,7 +34,6 @@ int freeRam(void)
   return free_memory; 
 } 
 
-
 void sdErrorCheck(void)
 {
   if (!card.errorCode()) return;
@@ -132,7 +44,7 @@ void sdErrorCheck(void)
   while(1);
 }
 
-void waveShield_SetUp(){ //(2.)
+void setup() {
   byte i;
   
   // set up serial port
@@ -146,7 +58,7 @@ void waveShield_SetUp(){ //(2.)
   pinMode(2, OUTPUT); //LCS
   pinMode(3, OUTPUT); //CLK
   pinMode(4, OUTPUT); //DI
-  //pinMode(5, OUTPUT); //LAT
+  pinMode(5, OUTPUT); //LAT
   // initilise file extension part of file to play
   toPlay[2] = '.';
   toPlay[3] = 'W';
@@ -195,7 +107,8 @@ void waveShield_SetUp(){ //(2.)
   playcomplete( "FRONTC~1.WAV");
 }
 
-void waveShield_Loop(){
+
+void loop() {
   if(Serial.available() > 0) {
     num = Serial.read();
     num -= 0x30;
@@ -218,7 +131,6 @@ void makeName(int number){  // generates a file name 00.WAV to 99.WAV
   toPlay[1] = (num & 0xf) | 0x30;
   }
 }
-
 
 // Plays a full file from beginning to end with no pause.
 void playcomplete(char *name) {
@@ -247,6 +159,3 @@ void playfile(char *name) {
   // ok time to play! start playback
   wave.play();
 }
-
-
-//////////
