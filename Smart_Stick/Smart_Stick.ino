@@ -13,16 +13,17 @@
 
 //Sensors
 const int pwPin1 = 9;
-const int pwPin2 = 5;
+//const int pwPin2 = 5; //if there is no lat attached to 5
+const int pwPin2 = 6;   //If the lat is attached to 5
 //int triggerPin1 = 13;
 long sensor1, sensor2, distance1, distance2;
 
 //Wave Shield
-SdReader card;    // This object holds the information for the card
-FatVolume vol;    // This holds the information for the partition on the card
-FatReader root;   // This holds the information for the filesystem on the card
-FatReader f;      // This holds the information for the file we're play
-WaveHC wave;      // This is the only wave (audio) object, since we will only play one at a time
+SdReader card;      // This object holds the information for the card
+FatVolume vol;      // This holds the information for the partition on the card
+FatReader root;     // This holds the information for the filesystem on the card
+FatReader f;        // This holds the information for the file we're play
+WaveHC wave;        // This is the only wave (audio) object, since we will only play one at a time
 #define DEBOUNCE 5  // button debouncer
 
 //Vibration Motor
@@ -30,17 +31,18 @@ Adafruit_DRV2605 drv;
 
 // Global variables
 int num=0;
-char toPlay[8]; // file to play 00.WAV to 99.WAV
+char toPlay[8];     // file to play 00.WAV to 99.WAV
 uint8_t effect = 1; // Defaulting vibration motor effect to 1
+int audio_time = 0;
 
 
 ////////////Universal SetUp/////////////
 void setup() 
 {
   Serial.begin(9600);
-  sensor_setup();   // (1.)
+  sensor_setup();     // (1.)
   waveShield_SetUp(); // (2.)
-  vibrationSetup(); // (3.)
+  vibrationSetup();   // (3.)
 }
 ////////////Universal Loop/////////////
 void loop () {
@@ -48,7 +50,6 @@ void loop () {
   read_sensor();
   waveShield_Loop();
   printall();
-  delay(1000);
 }
 //////////////////////////////////////////
 
@@ -96,11 +97,10 @@ void read_sensor()
 void printall()
 {         
   if (distance1<50 && distance2<50){
-
+  
     drv.setWaveform(0, effect); // Plays vibration effect
     drv.setWaveform(1, 0); // Ends effect
     drv.go();
-    delay(100);
     
     Serial.println("\n Obstacle in Front: ");
     Serial.print(" L = ");
@@ -113,7 +113,6 @@ void printall()
     drv.setWaveform(0, effect); // Plays vibration effect
     drv.setWaveform(1, 0); // Ends effect
     drv.go();
-    delay(100);
     
     Serial.println("\n Obstacle to left: ");
     Serial.print(" L = ");
@@ -121,12 +120,11 @@ void printall()
     Serial.print(" R = ");
     Serial.print(distance2);
   } 
-  else if (!distance1<50 && distance2<50){   
-
+  else if (!distance1<50 && distance2<50){  
+    
     drv.setWaveform(0, effect); // Plays vibration effect
     drv.setWaveform(1, 0); // Ends effect
     drv.go();
-    delay(100);
     
     Serial.println("\n Obstacle to right: ");
     Serial.print(" L = ");
@@ -143,10 +141,20 @@ void printall()
     Serial.print(distance2);
   }
 }
+
+
 ////////////////////////////////////////
 
 ////////////////////////////////////////
 /// --- Wave Shield --- ///
+
+void delay_audio(){
+  audio_time = 0;
+  while(audio_time < 3000){
+    audio_time++;
+  }
+}
+
 // this handy function will return the number of bytes currently free in RAM, great for debugging!   
 int freeRam(void)
 {
@@ -229,37 +237,27 @@ void waveShield_SetUp(){ //(2.)
     putstring_nl("Can't open root dir!"); // Something went wrong,
     while(1); 
   }
-
- 
-  playcomplete( "RIGHTC~1.WAV");
-  playcomplete( "LEFTCANE.WAV");
-  playcomplete( "FRONTC~1.WAV");
 }
 
 void waveShield_Loop(){
   if(Serial.available() > 0) {
     num = Serial.read();
     num -= 0x30;
-   // Serial.println(num,HEX);
-  makeName(num);
-  playfile(toPlay);
-  delay(1000);
+    playfile(toPlay);
+    delay(1000);
    // wave.stop();    
    }
-}
 
-void makeName(int number){  // generates a file name 00.WAV to 99.WAV
-  int i=0;
-  if(num > 9) {
-  toPlay[0] = ((num/10) & 0xf) | 0x30;
-  toPlay[1] = ((num%10) & 0xf) | 0x30;
-  }
-  else {
-  toPlay[0] =  0x30;
-  toPlay[1] = (num & 0xf) | 0x30;
+  if (distance1<50 && distance2<50){      //need to fix the delay / count
+    playcomplete( "FRONTC~1.WAV");
+  } 
+  else if (distance1<50 && !distance2<50){
+    playcomplete( "LEFTCANE.WAV");
+  } 
+  else if (!distance1<50 && distance2<50){  
+    playcomplete( "RIGHTC~1.WAV");
   }
 }
-
 
 // Plays a full file from beginning to end with no pause.
 void playcomplete(char *name) {
@@ -288,6 +286,5 @@ void playfile(char *name) {
   // ok time to play! start playback
   wave.play();
 }
-
 
 //////////
