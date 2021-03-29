@@ -32,9 +32,11 @@ Adafruit_DRV2605 drv;
 // Global variables
 int num=0;
 char toPlay[8];     // file to play 00.WAV to 99.WAV
+
 uint8_t effect1 = 44; // "44 − Long Double Sharp Tick 1 – 100%"
 uint8_t effect2 = 45; // "45 − Long Double Sharp Tick 2 – 80%"
 uint8_t effect3 = 46; // "46 − Long Double Sharp Tick 2 – 60%"
+
 int audio_time = 0;
 
 
