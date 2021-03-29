@@ -98,7 +98,7 @@ void read_sensor()
 
 void printall()
 {         
-  if (distance1<50 && distance2<50)
+  if (distance1<150 && distance2<150)
   { 
     Serial.println("\n Obstacle in Front: ");
     Serial.print(" L = ");
@@ -108,7 +108,7 @@ void printall()
 
     choose_Vibration_Effect(distance1);
   } 
-  else if (distance1<50 && !distance2<50)
+  else if (distance1<150 && !distance2<150)
   {
        
     Serial.println("\n Obstacle to left: ");
@@ -119,7 +119,7 @@ void printall()
 
     choose_Vibration_Effect(distance1);
   } 
-  else if (!distance1<50 && distance2<50){  
+  else if (!distance1<150 && distance2<150){  
     
     Serial.println("\n Obstacle to right: ");
     Serial.print(" L = ");
@@ -145,7 +145,7 @@ void printall()
 void choose_Vibration_Effect(long distance)
 {
   //"1 − Strong Click - 100%" - effect 1
-    if(distance<=30 || distance<=30)
+    if(distance<=40 || distance<=40)
     {
       drv.setWaveform(0, effect1); // 
       drv.setWaveform(1, 0); // Ends effect
@@ -154,7 +154,7 @@ void choose_Vibration_Effect(long distance)
     }
 
     //"2 − Strong Click - 60%" - effect 1
-    if(distance<=60 && distance>30)
+    if(distance<=80 && distance>40)
     {
       drv.setWaveform(0, effect2); // 
       drv.setWaveform(1, 0); // Ends effect
@@ -163,7 +163,7 @@ void choose_Vibration_Effect(long distance)
     }
 
     //"3 − Strong Click - 30%" - effect 3
-    if(distance<=100 && distance>60)
+    if(distance<=120 && distance>80)
     {
       drv.setWaveform(0, effect3); // 
       drv.setWaveform(1, 0); // Ends effect
