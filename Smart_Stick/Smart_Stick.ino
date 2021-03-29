@@ -7,11 +7,13 @@
 #include <avr/pgmspace.h>
 #include "WaveUtil.h"
 #include "WaveHC.h"
+#include <Wire.h>
+#include "Adafruit_DRV2605.h"
 
 
 //Sensors
 const int pwPin1 = 9;
-const int pwPin2 = 6;
+const int pwPin2 = 5;
 //int triggerPin1 = 13;
 long sensor1, sensor2, distance1, distance2;
 
@@ -22,9 +24,14 @@ FatReader root;   // This holds the information for the filesystem on the card
 FatReader f;      // This holds the information for the file we're play
 WaveHC wave;      // This is the only wave (audio) object, since we will only play one at a time
 #define DEBOUNCE 5  // button debouncer
+
+//Vibration Motor
+Adafruit_DRV2605 drv;
+
 // Global variables
 int num=0;
 char toPlay[8]; // file to play 00.WAV to 99.WAV
+uint8_t effect = 1; // Defaulting vibration motor effect to 1
 
 
 ////////////Universal SetUp/////////////
@@ -32,19 +39,35 @@ void setup()
 {
   Serial.begin(9600);
   sensor_setup();   // (1.)
-//  waveShield_SetUp(); // (2.)
+  waveShield_SetUp(); // (2.)
+  vibrationSetup(); // (3.)
 }
 ////////////Universal Loop/////////////
 void loop () {
   start_sensor();
   read_sensor();
-//  waveShield_Loop();
+  waveShield_Loop();
   printall();
+  delay(1000);
 }
 //////////////////////////////////////////
 
+////////Vibration Motor Setup////////////
 
-////////////  (1.) Sensor code/////////////
+void vibrationSetup() {
+  Serial.begin(9600);
+  Serial.println("DRV test");
+  drv.begin();
+  
+  drv.selectLibrary(1);
+  
+  // I2C trigger by sending 'go' command 
+  // default, internal trigger when sending GO command
+  drv.setMode(DRV2605_MODE_INTTRIG); 
+}
+////////////////////////////////////
+
+////////////Sensor code/////////////
 
 //-------Sensor set up--------//
 void sensor_setup()  //---> (1.)
@@ -64,15 +87,21 @@ void start_sensor()
 void read_sensor()
 {
   sensor1 = pulseIn(pwPin1, HIGH);
-  distance2 = sensor1/58; //makes the reported range the distance in centimeters
+  distance1 = sensor1/10; //makes the reported range the distance in centimeters
   delay(1); //helped make the range readings more stable
   sensor2 = pulseIn(pwPin2, HIGH);
-  distance1 = sensor2/58; 
+  distance2 = sensor2/10; 
 }
 
 void printall()
 {         
   if (distance1<50 && distance2<50){
+
+    drv.setWaveform(0, effect); // Plays vibration effect
+    drv.setWaveform(1, 0); // Ends effect
+    drv.go();
+    delay(100);
+    
     Serial.println("\n Obstacle in Front: ");
     Serial.print(" L = ");
     Serial.print(distance1);
@@ -80,13 +109,25 @@ void printall()
     Serial.print(distance2);
   } 
   else if (distance1<50 && !distance2<50){
+    
+    drv.setWaveform(0, effect); // Plays vibration effect
+    drv.setWaveform(1, 0); // Ends effect
+    drv.go();
+    delay(100);
+    
     Serial.println("\n Obstacle to left: ");
     Serial.print(" L = ");
     Serial.print(distance1);
     Serial.print(" R = ");
     Serial.print(distance2);
   } 
-  else if (!distance1<50 && distance2<50){
+  else if (!distance1<50 && distance2<50){   
+
+    drv.setWaveform(0, effect); // Plays vibration effect
+    drv.setWaveform(1, 0); // Ends effect
+    drv.go();
+    delay(100);
+    
     Serial.println("\n Obstacle to right: ");
     Serial.print(" L = ");
     Serial.print(distance1);
