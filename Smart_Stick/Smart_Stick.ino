@@ -32,9 +32,11 @@ Adafruit_DRV2605 drv;
 // Global variables
 int num=0;
 char toPlay[8];     // file to play 00.WAV to 99.WAV
-uint8_t effect1 = 1; // "1 − Strong Click - 100%"
-uint8_t effect2 = 2; //"2 − Strong Click - 60%"
-uint8_t effect3 = 3; //"3 − Strong Click - 30%"
+
+uint8_t effect1 = 44; // "44 − Long Double Sharp Tick 1 – 100%"
+uint8_t effect2 = 45; // "45 − Long Double Sharp Tick 2 – 80%"
+uint8_t effect3 = 46; // "46 − Long Double Sharp Tick 2 – 60%"
+
 int audio_time = 0;
 
 
@@ -145,30 +147,30 @@ void printall()
 void choose_Vibration_Effect(long distance)
 {
   //"1 − Strong Click - 100%" - effect 1
-    if(distance<=40 || distance<=40)
+    if(distance<=50)
     {
       drv.setWaveform(0, effect1); // 
       drv.setWaveform(1, 0); // Ends effect
       drv.go();
-      Serial.println("1 − Strong Click - 100%");
+      Serial.println(" 44 − Long Double Sharp Tick 1 – 100%");
     }
 
     //"2 − Strong Click - 60%" - effect 1
-    if(distance<=80 && distance>40)
+    if(distance<=100 && distance>50)
     {
       drv.setWaveform(0, effect2); // 
       drv.setWaveform(1, 0); // Ends effect
       drv.go();
-      Serial.println("2 − Strong Click - 60%");
+      Serial.println(" 45 − Long Double Sharp Tick 1 – 80%");
     }
 
     //"3 − Strong Click - 30%" - effect 3
-    if(distance<=120 && distance>80)
+    if(distance<=150 && distance>100)
     {
       drv.setWaveform(0, effect3); // 
       drv.setWaveform(1, 0); // Ends effect
       drv.go();
-      Serial.println("3 − Strong Click - 30%");
+      Serial.println(" 46 − Long Double Sharp Tick 1 – 60%");
     }
 }
 
@@ -277,13 +279,13 @@ void waveShield_Loop(){
    // wave.stop();    
    }
 
-  if (distance1<50 && distance2<50){      //need to fix the delay / count
+  if (distance1<150 && distance2<150){      //need to fix the delay / count
     playcomplete( "FRONTC~1.WAV");
   } 
-  else if (distance1<50 && !distance2<50){
+  else if (distance1<150 && !distance2<150){
     playcomplete( "LEFTCANE.WAV");
   } 
-  else if (!distance1<50 && distance2<50){  
+  else if (!distance1<150 && distance2<150){  
     playcomplete( "RIGHTC~1.WAV");
   }
 }
