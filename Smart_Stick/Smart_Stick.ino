@@ -32,7 +32,9 @@ Adafruit_DRV2605 drv;
 // Global variables
 int num=0;
 char toPlay[8];     // file to play 00.WAV to 99.WAV
-uint8_t effect = 1; // Defaulting vibration motor effect to 1
+uint8_t effect1 = 1; // "1 − Strong Click - 100%"
+uint8_t effect2 = 2; //"2 − Strong Click - 60%"
+uint8_t effect3 = 3; //"3 − Strong Click - 30%"
 int audio_time = 0;
 
 
@@ -96,41 +98,36 @@ void read_sensor()
 
 void printall()
 {         
-  if (distance1<50 && distance2<50){
-  
-    drv.setWaveform(0, effect); // Plays vibration effect
-    drv.setWaveform(1, 0); // Ends effect
-    drv.go();
-    
+  if (distance1<50 && distance2<50)
+  { 
     Serial.println("\n Obstacle in Front: ");
     Serial.print(" L = ");
     Serial.print(distance1);
     Serial.print(" R = ");
     Serial.print(distance2);
+
+    choose_Vibration_Effect(distance1);
   } 
-  else if (distance1<50 && !distance2<50){
-    
-    drv.setWaveform(0, effect); // Plays vibration effect
-    drv.setWaveform(1, 0); // Ends effect
-    drv.go();
-    
+  else if (distance1<50 && !distance2<50)
+  {
+       
     Serial.println("\n Obstacle to left: ");
     Serial.print(" L = ");
     Serial.print(distance1);
     Serial.print(" R = ");
     Serial.print(distance2);
+
+    choose_Vibration_Effect(distance1);
   } 
   else if (!distance1<50 && distance2<50){  
-    
-    drv.setWaveform(0, effect); // Plays vibration effect
-    drv.setWaveform(1, 0); // Ends effect
-    drv.go();
     
     Serial.println("\n Obstacle to right: ");
     Serial.print(" L = ");
     Serial.print(distance1);
     Serial.print(" R = ");
     Serial.print(distance2);
+
+    choose_Vibration_Effect(distance2);
   }
   else
   {
@@ -139,9 +136,41 @@ void printall()
     Serial.print(distance1);
     Serial.print(" R = ");
     Serial.print(distance2);
+
+    //No vibration Effect played.
   }
 }
 
+
+void choose_Vibration_Effect(long distance)
+{
+  //"1 − Strong Click - 100%" - effect 1
+    if(distance<=30 || distance<=30)
+    {
+      drv.setWaveform(0, effect1); // 
+      drv.setWaveform(1, 0); // Ends effect
+      drv.go();
+      Serial.println("1 − Strong Click - 100%");
+    }
+
+    //"2 − Strong Click - 60%" - effect 1
+    if(distance<=60 && distance>30)
+    {
+      drv.setWaveform(0, effect2); // 
+      drv.setWaveform(1, 0); // Ends effect
+      drv.go();
+      Serial.println("2 − Strong Click - 60%");
+    }
+
+    //"3 − Strong Click - 30%" - effect 3
+    if(distance<=100 && distance>60)
+    {
+      drv.setWaveform(0, effect3); // 
+      drv.setWaveform(1, 0); // Ends effect
+      drv.go();
+      Serial.println("3 − Strong Click - 30%");
+    }
+}
 
 ////////////////////////////////////////
 
