@@ -11,7 +11,7 @@
 
 //Sensors
 const int pwPin1 = 9;
-const int pwPin2 = 11;
+const int pwPin2 = 6;
 //int triggerPin1 = 13;
 long sensor1, sensor2, distance1, distance2;
 
@@ -32,13 +32,13 @@ void setup()
 {
   Serial.begin(9600);
   sensor_setup();   // (1.)
-  waveShield_SetUp(); // (2.)
+//  waveShield_SetUp(); // (2.)
 }
 ////////////Universal Loop/////////////
 void loop () {
   start_sensor();
   read_sensor();
-  waveShield_Loop();
+//  waveShield_Loop();
   printall();
 }
 //////////////////////////////////////////
@@ -64,10 +64,10 @@ void start_sensor()
 void read_sensor()
 {
   sensor1 = pulseIn(pwPin1, HIGH);
-  distance1 = sensor1/10; //makes the reported range the distance in centimeters
+  distance2 = sensor1/58; //makes the reported range the distance in centimeters
   delay(1); //helped make the range readings more stable
   sensor2 = pulseIn(pwPin2, HIGH);
-  distance2 = sensor2/10; 
+  distance1 = sensor2/58; 
 }
 
 void printall()
