@@ -1,162 +1,293 @@
-const int pwPin1 = 3;
+//SDP2021 Team 32
+
+
+////Imports/////
+#include <FatReader.h>
+#include <SdReader.h>
+#include <avr/pgmspace.h>
+#include "WaveUtil.h"
+#include "WaveHC.h"
+#include <Wire.h>
+#include "Adafruit_DRV2605.h"
+
+
+//Sensors
+const int pwPin1 = 9;
 const int pwPin2 = 5;
-int triggerPin1 = 13;
+//int triggerPin1 = 13;
 long sensor1, sensor2, distance1, distance2;
 
+//Wave Shield
+SdReader card;    // This object holds the information for the card
+FatVolume vol;    // This holds the information for the partition on the card
+FatReader root;   // This holds the information for the filesystem on the card
+FatReader f;      // This holds the information for the file we're play
+WaveHC wave;      // This is the only wave (audio) object, since we will only play one at a time
+#define DEBOUNCE 5  // button debouncer
 
-// include the SoftwareSerial library so we can use it to talk to the Emic 2 module
-#include <SoftwareSerial.h>
+//Vibration Motor
+Adafruit_DRV2605 drv;
 
-#define rxPin   10  // Serial input (connects to Emic 2's SOUT pin)
-#define txPin   11  // Serial output (connects to Emic 2's SIN pin)
-#define ledPin  13  // Most Arduino boards have an on-board LED on this pin
+// Global variables
+int num=0;
+char toPlay[8]; // file to play 00.WAV to 99.WAV
+uint8_t effect = 1; // Defaulting vibration motor effect to 1
 
-// set up a new serial port
-SoftwareSerial emicSerial =  SoftwareSerial(rxPin, txPin);
-void start_sensor(){
-  digitalWrite(triggerPin1,HIGH);
-  delay(1);
-  digitalWrite(triggerPin1,LOW);
-}
-void read_sensor(){
-  sensor2 = pulseIn(pwPin2, HIGH);
-  distance1 = sensor2/58;
-}
-void setup() {
+
+////////////Universal SetUp/////////////
+void setup() 
+{
   Serial.begin(9600);
-  pinMode(pwPin1, INPUT); 
-  pinMode(pwPin2, INPUT);
-  pinMode(triggerPin1, OUTPUT);
-
-  // define pin modes
-  pinMode(ledPin, OUTPUT);
-  pinMode(rxPin, INPUT);
-  pinMode(txPin, OUTPUT);
-  
-  // set the data rate for the SoftwareSerial port
-  emicSerial.begin(9600);
-
-  digitalWrite(ledPin, LOW);  // turn LED off, LED turns on when speaking
-  
-  /*
-    When the Emic 2 powers on, it takes about 3 seconds for it to successfully
-    initialize. It then sends a ":" character to indicate it's ready to accept
-    commands. If the Emic 2 is already initialized, a CR will also cause it
-    to send a ":"
-  */
-  emicSerial.print('\n');             // Send a CR in case the system is already up
-  while (emicSerial.read() != ':');   // When the Emic 2 has initialized and is ready, it will send a single ':' character, so wait here until we receive it
-  delay(10);                          // Short delay
-  emicSerial.flush();                 // Flush the receive buffer
+  sensor_setup();   // (1.)
+  waveShield_SetUp(); // (2.)
+  vibrationSetup(); // (3.)
 }
-void printall(){         
-  if (distance1 >100 ){
-    Serial.println("clear: ");
-    Serial.print(distance1);
-  } 
-   else {
-    Serial.println("obstacle: ");
-    Serial.print(distance1);  
-  }
-}
+////////////Universal Loop/////////////
 void loop () {
   start_sensor();
   read_sensor();
+  waveShield_Loop();
   printall();
-  delay(5);
+  delay(1000);
+}
+//////////////////////////////////////////
 
-  date();
-  delay(500);     // 1/2 second delay
+////////Vibration Motor Setup////////////
 
-  introduction();
-  delay(500);       // 1/2 second delay
+void vibrationSetup() {
+  Serial.begin(9600);
+  Serial.println("DRV test");
+  drv.begin();
   
-  leftOfCane();     //There is an obj on the left of the cane
-  delay(500);       // 1/2 second delay
+  drv.selectLibrary(1);
   
-  rightOfCane();    //There is an obj on the right of the cane
-  delay(500);       // 1/2 second delay
-  
-  distanceOfObj();  //There is an obj ___ ahead -- Currently hardwired
+  // I2C trigger by sending 'go' command 
+  // default, internal trigger when sending GO command
+  drv.setMode(DRV2605_MODE_INTTRIG); 
+}
+////////////////////////////////////
+
+////////////Sensor code/////////////
+
+//-------Sensor set up--------//
+void sensor_setup()  //---> (1.)
+{
+  pinMode(pwPin1, INPUT); 
+  pinMode(pwPin2, INPUT);
+  //pinMode(triggerPin1, OUTPUT);
+}
+//----------------------------//
+void start_sensor()
+{
+  //digitalWrite(triggerPin1,HIGH);
+  delay(1);
+  //digitalWrite(triggerPin1,LOW);
+}
+
+void read_sensor()
+{
+  sensor1 = pulseIn(pwPin1, HIGH);
+  distance1 = sensor1/10; //makes the reported range the distance in centimeters
+  delay(1); //helped make the range readings more stable
+  sensor2 = pulseIn(pwPin2, HIGH);
+  distance2 = sensor2/10; 
+}
+
+void printall()
+{         
+  if (distance1<50 && distance2<50){
+
+    drv.setWaveform(0, effect); // Plays vibration effect
+    drv.setWaveform(1, 0); // Ends effect
+    drv.go();
+    delay(100);
     
-  while(1)      // Demonstration complete!
+    Serial.println("\n Obstacle in Front: ");
+    Serial.print(" L = ");
+    Serial.print(distance1);
+    Serial.print(" R = ");
+    Serial.print(distance2);
+  } 
+  else if (distance1<50 && !distance2<50){
+    
+    drv.setWaveform(0, effect); // Plays vibration effect
+    drv.setWaveform(1, 0); // Ends effect
+    drv.go();
+    delay(100);
+    
+    Serial.println("\n Obstacle to left: ");
+    Serial.print(" L = ");
+    Serial.print(distance1);
+    Serial.print(" R = ");
+    Serial.print(distance2);
+  } 
+  else if (!distance1<50 && distance2<50){   
+
+    drv.setWaveform(0, effect); // Plays vibration effect
+    drv.setWaveform(1, 0); // Ends effect
+    drv.go();
+    delay(100);
+    
+    Serial.println("\n Obstacle to right: ");
+    Serial.print(" L = ");
+    Serial.print(distance1);
+    Serial.print(" R = ");
+    Serial.print(distance2);
+  }
+  else
   {
-    delay(500);
-    digitalWrite(ledPin, HIGH);
-    delay(500);              
-    digitalWrite(ledPin, LOW);
+    Serial.print("\n Clear ");
+    Serial.print(" L = ");
+    Serial.print(distance1);
+    Serial.print(" R = ");
+    Serial.print(distance2);
+  }
+}
+////////////////////////////////////////
+
+////////////////////////////////////////
+/// --- Wave Shield --- ///
+// this handy function will return the number of bytes currently free in RAM, great for debugging!   
+int freeRam(void)
+{
+  extern int  __bss_end; 
+  extern int  *__brkval; 
+  int free_memory; 
+  if((int)__brkval == 0) {
+    free_memory = ((int)&free_memory) - ((int)&__bss_end); 
+  }
+  else {
+    free_memory = ((int)&free_memory) - ((int)__brkval); 
+  }
+  return free_memory; 
+} 
+
+
+void sdErrorCheck(void)
+{
+  if (!card.errorCode()) return;
+  putstring("\n\rSD I/O error: ");
+  Serial.print(card.errorCode(), HEX);
+  putstring(", ");
+  Serial.println(card.errorData(), HEX);
+  while(1);
+}
+
+void waveShield_SetUp(){ //(2.)
+  byte i;
+  
+  // set up serial port
+  Serial.begin(9600);
+  putstring_nl("WaveHC with ");
+
+  putstring("Free RAM: ");       // This can help with debugging, running out of RAM is bad
+  Serial.println(freeRam());      // if this is under 150 bytes it may spell trouble!
+  
+  // Set the output pins for the DAC control. This pins are defined in the library
+  pinMode(2, OUTPUT); //LCS
+  pinMode(3, OUTPUT); //CLK
+  pinMode(4, OUTPUT); //DI
+  //pinMode(5, OUTPUT); //LAT
+  // initilise file extension part of file to play
+  toPlay[2] = '.';
+  toPlay[3] = 'W';
+  toPlay[4] = 'A';
+  toPlay[5] = 'V';
+  toPlay[6] = '\0'; // terminator
+
+  
+    //  if (!card.init(true)) { //play with 4 MHz spi if 8MHz isn't working for you
+  if (!card.init()) {         //play with 8 MHz spi (default faster!)  
+    putstring_nl("Card init. failed!");  // Something went wrong, lets print out why
+    sdErrorCheck();
+    while(1);                            // then 'halt' - do nothing!
+  }
+  
+  // enable optimize read - some cards may timeout. Disable if you're having problems
+  card.partialBlockRead(true);
+
+// Now we will look for a FAT partition!
+  uint8_t part;
+  for (part = 0; part < 5; part++) {     // we have up to 5 slots to look in
+    if (vol.init(card, part)) 
+      break;                             // we found one, lets bail
+  }
+  if (part == 5) {                       // if we ended up not finding one  :(
+    putstring_nl("No valid FAT partition!");
+    sdErrorCheck();      // Something went wrong, lets print out why
+    while(1);                            // then 'halt' - do nothing!
+  }
+  
+// Try to open the root directory
+  if (!root.openRoot(vol)) {
+    putstring_nl("Can't open root dir!"); // Something went wrong,
+    while(1); 
+  }
+  
+// Try to open the root directory
+  if (!root.openRoot(vol)) {
+    putstring_nl("Can't open root dir!"); // Something went wrong,
+    while(1); 
+  }
+
+ 
+  playcomplete( "RIGHTC~1.WAV");
+  playcomplete( "LEFTCANE.WAV");
+  playcomplete( "FRONTC~1.WAV");
+}
+
+void waveShield_Loop(){
+  if(Serial.available() > 0) {
+    num = Serial.read();
+    num -= 0x30;
+   // Serial.println(num,HEX);
+  makeName(num);
+  playfile(toPlay);
+  delay(1000);
+   // wave.stop();    
+   }
+}
+
+void makeName(int number){  // generates a file name 00.WAV to 99.WAV
+  int i=0;
+  if(num > 9) {
+  toPlay[0] = ((num/10) & 0xf) | 0x30;
+  toPlay[1] = ((num%10) & 0xf) | 0x30;
+  }
+  else {
+  toPlay[0] =  0x30;
+  toPlay[1] = (num & 0xf) | 0x30;
   }
 }
 
 
-void changeVoice(){
-  //Change Voice
-  emicSerial.print('N');
-  emicSerial.print('2');              // change voice [0,8]
-  emicSerial.print('\n');
-  digitalWrite(ledPin, HIGH);         // Turn on LED while Emic is outputting audio
-  while (emicSerial.read() != ':');   // Wait here until the Emic 2 responds with a ":" indicating it's ready to accept the next command
-  digitalWrite(ledPin, LOW);
+// Plays a full file from beginning to end with no pause.
+void playcomplete(char *name) {
+  // call our helper to find and play this name
+  playfile(name);
+  while (wave.isplaying) {
+  // do nothing while its playing
+  }
+  // now its done playing
 }
 
-void changeLanguage(){
-  //Change Language
-  emicSerial.print('P');
-  emicSerial.print('0');              // change language/dialect [0,2]
-  emicSerial.print('\n');
-  digitalWrite(ledPin, HIGH);         // Turn on LED while Emic is outputting audio
-  while (emicSerial.read() != ':');   // Wait here until the Emic 2 responds with a ":" indicating it's ready to accept the next command
-  digitalWrite(ledPin, LOW);
+void playfile(char *name) {
+  // see if the wave object is currently doing something
+  if (wave.isplaying) {// already playing something, so stop it!
+    wave.stop(); // stop it
+  }
+  // look in the root directory and open the file
+  if (!f.open(root, name)) {
+    putstring_nl("Couldn't open file "); Serial.print(name); return;
+  }
+  // OK read the file and turn it into a wave object
+  if (!wave.create(f)) {
+    putstring_nl("Not a valid WAV"); return;
+  }
+  
+  // ok time to play! start playback
+  wave.play();
 }
 
-void date(){
-  // Test 1: Say today's date
-  changeVoice();
-  changeLanguage();
-  emicSerial.print('S');
-  emicSerial.print("Hello. This is test number 1. Today is November seven teen twenty twenty.");  // Send the desired string to convert to speech
-  emicSerial.print('\n');
-  digitalWrite(ledPin, HIGH);         // Turn on LED while Emic is outputting audio
-  while (emicSerial.read() != ':');   // Wait here until the Emic 2 responds with a ":" indicating it's ready to accept the next command
-  digitalWrite(ledPin, LOW);
-}
 
-void introduction(){
-  // Introduction
-  emicSerial.print('S');
-  emicSerial.print("This is Linda's MDR Deliverable.");  // Send the desired string to convert to speech
-  emicSerial.print('\n');
-  digitalWrite(ledPin, HIGH);         // Turn on LED while Emic is outputting audio
-  while (emicSerial.read() != ':');   // Wait here until the Emic 2 responds with a ":" indicating it's ready to accept the next command
-  digitalWrite(ledPin, LOW);
-}
-
-void leftOfCane(){
-  // Object is on the left
-  emicSerial.print('S');
-  emicSerial.print("There is an object on the left.");  // Send the desired string to convert to speech
-  emicSerial.print('\n');
-  digitalWrite(ledPin, HIGH);         // Turn on LED while Emic is outputting audio
-  while (emicSerial.read() != ':');   // Wait here until the Emic 2 responds with a ":" indicating it's ready to accept the next command
-  digitalWrite(ledPin, LOW);
-}
-
-void rightOfCane(){
-  // Object is on the right
-  emicSerial.print('S');
-  emicSerial.print("There is an object on the right");  // Send the desired string to convert to speech
-  emicSerial.print('\n');
-  digitalWrite(ledPin, HIGH);         // Turn on LED while Emic is outputting audio
-  while (emicSerial.read() != ':');   // Wait here until the Emic 2 responds with a ":" indicating it's ready to accept the next command
-  digitalWrite(ledPin, LOW);
-}
-
-void distanceOfObj(){
-  // Object is 2 feet away
-  emicSerial.print('S');
-  emicSerial.print("There is an object that is 2 feet away");  // Send the desired string to convert to speech
-  emicSerial.print('\n');
-  digitalWrite(ledPin, HIGH);         // Turn on LED while Emic is outputting audio
-  while (emicSerial.read() != ':');   // Wait here until the Emic 2 responds with a ":" indicating it's ready to accept the next command
-  digitalWrite(ledPin, LOW);
-}
+//////////
